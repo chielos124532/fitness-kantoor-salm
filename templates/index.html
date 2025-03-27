@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Fitness Reserveren</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body>
+    <h2>Reserveer een tijdslot voor vandaag ({{ today }})</h2>
+    <form method="POST">
+        Naam: <input type="text" name="naam" required><br><br>
+        Tijdslot:
+        <select name="tijdslot">
+            {% for slot in slots %}
+                <option value="{{ slot.tijd }}" {% if slot.aantal >= 5 %}disabled{% endif %}>
+                    {{ slot.tijd }} ({{ slot.aantal }}/5)
+                </option>
+            {% endfor %}
+        </select><br><br>
+        <input type="hidden" name="datum" value="{{ today }}">
+        <button type="submit">Reserveer</button>
+    </form>
+</body>
+</html>
