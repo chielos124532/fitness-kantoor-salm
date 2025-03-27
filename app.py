@@ -4,7 +4,7 @@ from datetime import datetime
 
 app = Flask(__name__)
 
-def init_db()
+def init_db():
     conn = sqlite3.connect('reserveringen.db')
     c = conn.cursor()
     c.execute('''
