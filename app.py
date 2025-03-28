@@ -1,14 +1,16 @@
-from flask import Flask, render_template, request, redirect
+import os
+import csv
 import sqlite3
-from datetime import datetime, timedelta
 import smtplib
 from email.message import EmailMessage
+from datetime import datetime, timedelta
+from flask import Flask, render_template, request, redirect, send_file
 
 app = Flask(__name__)
 
-# Vul deze in met je eigen Gmail info:
-GMAIL_SENDER = "FitnessvanderSalm@gmail.com"
-GMAIL_PASSWORD = "ycbvlqxnqjbteekr"
+# Environment variables voor e-mail
+GMAIL_SENDER = os.environ.get("GMAIL_SENDER")
+GMAIL_PASSWORD = os.environ.get("GMAIL_PASSWORD")
 
 def init_db():
     conn = sqlite3.connect('reserveringen.db')
@@ -18,7 +20,8 @@ def init_db():
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             naam TEXT NOT NULL,
             datum TEXT NOT NULL,
-            tijdslot TEXT NOT NULL
+            tijdslot TEXT NOT NULL,
+            email TEXT
         )
     ''')
     conn.commit()
@@ -34,6 +37,9 @@ def generate_tijdsloten():
     return slots
 
 def send_confirmation_email(naam, datum, tijdslot, ontvanger_email):
+    if not ontvanger_email:
+        return
+
     start_dt = datetime.strptime(f"{datum} {tijdslot}", "%Y-%m-%d %H:%M")
     end_dt = start_dt + timedelta(hours=1)
 
@@ -82,22 +88,29 @@ def reserveren():
         conn = sqlite3.connect('reserveringen.db')
         c = conn.cursor()
 
-        # Check of beide blokken nog plek hebben
         c.execute('SELECT COUNT(*) FROM reserveringen WHERE datum=? AND tijdslot=?', (datum, starttijd))
         a1 = c.fetchone()[0]
         c.execute('SELECT COUNT(*) FROM reserveringen WHERE datum=? AND tijdslot=?', (datum, eindtijd))
         a2 = c.fetchone()[0]
 
         if a1 < 4 and a2 < 4:
-            c.execute('INSERT INTO reserveringen (naam, datum, tijdslot) VALUES (?, ?, ?)', (naam, datum, starttijd))
-            c.execute('INSERT INTO reserveringen (naam, datum, tijdslot) VALUES (?, ?, ?)', (naam, datum, eindtijd))
+            c.execute('INSERT INTO reserveringen (naam, datum, tijdslot, email) VALUES (?, ?, ?, ?)', (naam, datum, starttijd, email))
+            c.execute('INSERT INTO reserveringen (naam, datum, tijdslot, email) VALUES (?, ?, ?, ?)', (naam, datum, eindtijd, email))
             conn.commit()
 
-            if email:
-                send_confirmation_email(naam, datum, starttijd, email)
+            send_confirmation_email(naam, datum, starttijd, email)
+
+            # Log naar CSV
+            csv_bestand = 'reserveringen_log.csv'
+            file_exists = os.path.isfile(csv_bestand)
+            with open(csv_bestand, 'a', newline='', encoding='utf-8') as f:
+                writer = csv.writer(f)
+                if not file_exists:
+                    writer.writerow(['Datum', 'Starttijd', 'Naam', 'E-mailadres'])
+                writer.writerow([datum, starttijd, naam, email or ''])
 
         conn.close()
-        return redirect('/')
+        return redirect('/?success=1')
 
     tijdsloten = generate_tijdsloten()
     slots = []
@@ -111,3 +124,16 @@ def reserveren():
     conn.close()
 
     return render_template('index.html', slots=slots, today=today)
+
+@app.route('/admin')
+def admin():
+    conn = sqlite3.connect('reserveringen.db')
+    c = conn.cursor()
+    c.execute('SELECT naam, email, datum, tijdslot FROM reserveringen ORDER BY datum, tijdslot')
+    rows = c.fetchall()
+    conn.close()
+    return render_template('admin.html', reserveringen=rows)
+
+@app.route('/admin/download')
+def download_csv():
+    return send_file('reserveringen_log.csv', as_attachment=True)

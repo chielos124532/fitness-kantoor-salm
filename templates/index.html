@@ -10,6 +10,12 @@
     <div class="container py-5">
         <h1 class="mb-4 text-center">🏋️ Fitness Kantoor Salm</h1>
 
+        {% if request.args.get('success') %}
+            <div class="alert alert-success text-center">
+                ✅ Je reservering is succesvol opgeslagen!
+            </div>
+        {% endif %}
+
         <div class="card shadow-sm mb-4">
             <div class="card-body">
                 <h5 class="card-title">Reserveer een blok van <strong>1 uur</strong> (2 x 30 min)</h5>
