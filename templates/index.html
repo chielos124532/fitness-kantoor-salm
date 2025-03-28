@@ -12,7 +12,7 @@
 
         <div class="card shadow-sm mb-4">
             <div class="card-body">
-                <h5 class="card-title">Reserveer een tijdslot voor <strong>{{ today }}</strong></h5>
+                <h5 class="card-title">Reserveer een blok van <strong>1 uur</strong> (2 x 30 min) op <strong>{{ today }}</strong></h5>
                 <form method="POST">
                     <div class="mb-3">
                         <label for="naam" class="form-label">Naam:</label>
@@ -20,24 +20,24 @@
                     </div>
 
                     <div class="mb-3">
-                        <label for="tijdslot" class="form-label">Tijdslot:</label>
+                        <label for="tijdslot" class="form-label">Starttijd:</label>
                         <select class="form-select" name="tijdslot" required>
                             {% for slot in slots %}
-                                <option value="{{ slot.tijd }}" {% if slot.aantal >= 5 %}disabled{% endif %}>
-                                    {{ slot.tijd }} ({{ slot.aantal }}/5 bezet)
+                                <option value="{{ slot.tijd }}" {% if slot.aantal >= 4 %}disabled{% endif %}>
+                                    {{ slot.tijd }} ({{ slot.aantal }}/4 bezet)
                                 </option>
                             {% endfor %}
                         </select>
                     </div>
 
                     <input type="hidden" name="datum" value="{{ today }}">
-                    <button type="submit" class="btn btn-primary">Reserveer</button>
+                    <button type="submit" class="btn btn-primary w-100">Reserveer</button>
                 </form>
             </div>
         </div>
 
         <div class="alert alert-info text-center">
-            Maximaal 5 personen per tijdslot. Vol = vol.
+            Maximaal 4 personen per halfuurblok. Elke reservering beslaat 1 uur (2 blokken).
         </div>
     </div>
 </body>
