@@ -2,15 +2,17 @@ import os
 import csv
 import sqlite3
 import smtplib
+from flask import Flask, render_template, request, redirect, session, send_file, url_for
 from email.message import EmailMessage
 from datetime import datetime, timedelta
-from flask import Flask, render_template, request, redirect, send_file
 
 app = Flask(__name__)
 
-# Environment variables voor e-mail
+# Haal gegevens uit environment (veilig!)
 GMAIL_SENDER = os.environ.get("GMAIL_SENDER")
 GMAIL_PASSWORD = os.environ.get("GMAIL_PASSWORD")
+ADMIN_CODE = os.environ.get("ADMIN_CODE", "geheim123")
+app.secret_key = os.environ.get("FLASK_SECRET_KEY", "supergeheimekey")
 
 def init_db():
     conn = sqlite3.connect('reserveringen.db')
@@ -125,8 +127,17 @@ def reserveren():
 
     return render_template('index.html', slots=slots, today=today)
 
-@app.route('/admin')
+@app.route('/admin', methods=['GET', 'POST'])
 def admin():
+    if request.method == 'POST':
+        code = request.form.get('code')
+        if code == ADMIN_CODE:
+            session['admin'] = True
+            return redirect(url_for('admin'))
+
+    if not session.get('admin'):
+        return render_template('admin_login.html')
+
     conn = sqlite3.connect('reserveringen.db')
     c = conn.cursor()
     c.execute('SELECT naam, email, datum, tijdslot FROM reserveringen ORDER BY datum, tijdslot')
@@ -136,4 +147,6 @@ def admin():
 
 @app.route('/admin/download')
 def download_csv():
+    if not session.get('admin'):
+        return redirect('/admin')
     return send_file('reserveringen_log.csv', as_attachment=True)
