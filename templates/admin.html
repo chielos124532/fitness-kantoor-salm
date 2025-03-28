@@ -20,15 +20,21 @@
                     <th>E-mail</th>
                     <th>Datum</th>
                     <th>Tijdslot</th>
+                    <th>Actie</th>
                 </tr>
             </thead>
             <tbody>
                 {% for r in reserveringen %}
                 <tr>
-                    <td>{{ r[0] }}</td>
                     <td>{{ r[1] }}</td>
                     <td>{{ r[2] }}</td>
                     <td>{{ r[3] }}</td>
+                    <td>{{ r[4] }}</td>
+                    <td>
+                        <a href="/admin/delete/{{ r[0] }}" class="btn btn-sm btn-danger" onclick="return confirm('Weet je zeker dat je deze reservering wilt verwijderen?')">
+                            🗑️ Verwijder
+                        </a>
+                    </td>
                 </tr>
                 {% endfor %}
             </tbody>
