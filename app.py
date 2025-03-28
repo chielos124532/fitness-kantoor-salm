@@ -18,10 +18,10 @@ def init_db():
     conn.commit()
     conn.close()
 
-@app.route('', methods=['GET', 'POST'])
-def reserveren()
+@app.route('/', methods=['GET', 'POST'])  # <- route moet '/' zijn
+def reserveren():
     init_db()
-    if request.method == 'POST'
+    if request.method == 'POST':
         naam = request.form['naam']
         datum = request.form['datum']
         tijdslot = request.form['tijdslot']
@@ -29,23 +29,23 @@ def reserveren()
         # Check aantal reserveringen
         conn = sqlite3.connect('reserveringen.db')
         c = conn.cursor()
-        c.execute('SELECT COUNT() FROM reserveringen WHERE datum= AND tijdslot=', (datum, tijdslot))
+        c.execute('SELECT COUNT(*) FROM reserveringen WHERE datum=? AND tijdslot=?', (datum, tijdslot))
         aantal = c.fetchone()[0]
-        if aantal  5  # max 5 mensen
-            c.execute('INSERT INTO reserveringen (naam, datum, tijdslot) VALUES (, , )', (naam, datum, tijdslot))
+        if aantal < 5:  # max 5 mensen
+            c.execute('INSERT INTO reserveringen (naam, datum, tijdslot) VALUES (?, ?, ?)', (naam, datum, tijdslot))
             conn.commit()
         conn.close()
-        return redirect('')
+        return redirect('/')
 
     # Toon reserveringen per slot
     today = datetime.today().strftime('%Y-%m-%d')
-    tijdsloten = ['0800', '0900', '1000', '1100', '1200']
+    tijdsloten = ['08:00', '09:00', '10:00', '11:00', '12:00']
     slots = []
     conn = sqlite3.connect('reserveringen.db')
     c = conn.cursor()
-    for tijd in tijdsloten
-        c.execute('SELECT COUNT() FROM reserveringen WHERE datum= AND tijdslot=', (today, tijd))
+    for tijd in tijdsloten:
+        c.execute('SELECT COUNT(*) FROM reserveringen WHERE datum=? AND tijdslot=?', (today, tijd))
         aantal = c.fetchone()[0]
-        slots.append({'tijd' tijd, 'aantal' aantal})
+        slots.append({'tijd': tijd, 'aantal': aantal})
     conn.close()
     return render_template('index.html', slots=slots, today=today)
