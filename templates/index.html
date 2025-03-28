@@ -12,11 +12,21 @@
 
         <div class="card shadow-sm mb-4">
             <div class="card-body">
-                <h5 class="card-title">Reserveer een blok van <strong>1 uur</strong> (2 x 30 min) op <strong>{{ today }}</strong></h5>
+                <h5 class="card-title">Reserveer een blok van <strong>1 uur</strong> (2 x 30 min)</h5>
                 <form method="POST">
                     <div class="mb-3">
                         <label for="naam" class="form-label">Naam:</label>
                         <input type="text" class="form-control" id="naam" name="naam" required>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="email" class="form-label">E-mailadres (voor bevestiging):</label>
+                        <input type="email" class="form-control" id="email" name="email">
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="datum" class="form-label">Datum:</label>
+                        <input type="date" class="form-control" id="datum" name="datum" value="{{ today }}" required>
                     </div>
 
                     <div class="mb-3">
@@ -30,7 +40,6 @@
                         </select>
                     </div>
 
-                    <input type="hidden" name="datum" value="{{ today }}">
                     <button type="submit" class="btn btn-primary w-100">Reserveer</button>
                 </form>
             </div>
