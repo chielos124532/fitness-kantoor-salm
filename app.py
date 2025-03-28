@@ -39,7 +39,7 @@ def reserveren():
 
     # Toon reserveringen per slot
     today = datetime.today().strftime('%Y-%m-%d')
-    tijdsloten = ['08:00', '09:00', '10:00', '11:00', '12:00']
+tijdsloten = [f"{str(u).zfill(2)}:00" for u in range(6, 23)]
     slots = []
     conn = sqlite3.connect('reserveringen.db')
     c = conn.cursor()
