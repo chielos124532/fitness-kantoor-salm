@@ -46,7 +46,7 @@ def send_confirmation_email(naam, datum, tijdslot, ontvanger_email, annuleercode
 
     start_dt = datetime.strptime(f"{datum} {tijdslot}", "%Y-%m-%d %H:%M")
     end_dt = start_dt + timedelta(hours=1)
-    link = f"https://{os.environ.get('RENDER_EXTERNAL_HOSTNAME')}/mijn-reserveringen/{annuleercode}"
+    link = f"https://{os.environ.get('RENDER_EXTERNAL_HOSTNAME')}/mijn-reserveringen?email={ontvanger_email}"
 
     ics_content = f"""BEGIN:VCALENDAR
 VERSION:2.0
@@ -67,7 +67,7 @@ END:VCALENDAR"""
     msg.set_content(
         f"Hallo {naam},\n\nJe hebt succesvol gereserveerd op {datum} om {tijdslot}.\n"
         f"Locatie: Fitness in het kantoor.\n\n"
-        f"Wil je je reservering beheren of annuleren? Klik hier: {link}\n\nGroet,\nFitness Kantoor Salm"
+        f"Wil je je reserveringen bekijken of annuleren? Ga naar: {link}\n\nGroet,\nFitness Kantoor Salm"
     )
 
     msg.add_attachment(ics_content.encode('utf-8'), maintype='text', subtype='calendar', filename='reservering.ics')
@@ -126,19 +126,20 @@ def reserveren():
     conn.close()
     return render_template('index.html', slots=slots, today=today)
 
-@app.route('/mijn-reserveringen/<code>', methods=['GET', 'POST'])
-def mijn_reserveringen(code):
-    conn = sqlite3.connect('reserveringen.db')
-    c = conn.cursor()
-    if request.method == 'POST':
-        id_to_delete = request.form.get('delete_id')
-        c.execute('DELETE FROM reserveringen WHERE id=? AND annuleercode=?', (id_to_delete, code))
-        conn.commit()
-
-    c.execute('SELECT id, datum, tijdslot FROM reserveringen WHERE annuleercode=? ORDER BY datum, tijdslot', (code,))
-    rows = c.fetchall()
-    conn.close()
-    return render_template('mijn_reserveringen.html', reserveringen=rows, code=code)
+@app.route('/mijn-reserveringen', methods=['GET', 'POST'])
+def mijn_reserveringen():
+    reserveringen = []
+    email = request.values.get('email', '')
+    if email:
+        conn = sqlite3.connect('reserveringen.db')
+        c = conn.cursor()
+        if request.method == 'POST' and request.form.get('delete_id'):
+            c.execute('DELETE FROM reserveringen WHERE id=? AND email=?', (request.form.get('delete_id'), email))
+            conn.commit()
+        c.execute('SELECT id, datum, tijdslot FROM reserveringen WHERE email=? ORDER BY datum, tijdslot', (email,))
+        reserveringen = c.fetchall()
+        conn.close()
+    return render_template('mijn_reserveringen.html', reserveringen=reserveringen, email=email)
 
 @app.route('/admin', methods=['GET', 'POST'])
 def admin():
