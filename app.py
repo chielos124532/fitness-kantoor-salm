@@ -9,7 +9,6 @@ from datetime import datetime, timedelta
 
 app = Flask(__name__)
 
-# Veilig via environment variables
 GMAIL_SENDER = os.environ.get("GMAIL_SENDER")
 GMAIL_PASSWORD = os.environ.get("GMAIL_PASSWORD")
 ADMIN_CODE = os.environ.get("ADMIN_CODE", "geheim123")
@@ -86,9 +85,8 @@ def reserveren():
         datum = request.form['datum']
         starttijd = request.form['tijdslot']
         email = request.form.get('email')
-
         eindtijd = (datetime.strptime(starttijd, "%H:%M") + timedelta(minutes=30)).strftime("%H:%M")
-        code = str(uuid.uuid4())  # unieke annuleercode
+        code = str(uuid.uuid4())
 
         conn = sqlite3.connect('reserveringen.db')
         c = conn.cursor()
@@ -97,20 +95,22 @@ def reserveren():
         c.execute('SELECT COUNT(*) FROM reserveringen WHERE datum=? AND tijdslot=?', (datum, eindtijd))
         a2 = c.fetchone()[0]
 
-        if a1 < 4 and a2 < 4:
-            for tijd in [starttijd, eindtijd]:
-                c.execute('INSERT INTO reserveringen (naam, datum, tijdslot, email, annuleercode) VALUES (?, ?, ?, ?, ?)',
-                          (naam, datum, tijd, email, code))
-            conn.commit()
-            send_confirmation_email(naam, datum, starttijd, email, code)
+        if a1 >= 4 or a2 >= 4:
+            conn.close()
+            return redirect('/?error=1')
 
-            # Log naar CSV
-            csv_bestand = 'reserveringen_log.csv'
-            with open(csv_bestand, 'a', newline='', encoding='utf-8') as f:
-                writer = csv.writer(f)
-                if os.stat(csv_bestand).st_size == 0:
-                    writer.writerow(['Datum', 'Starttijd', 'Naam', 'E-mailadres'])
-                writer.writerow([datum, starttijd, naam, email or ''])
+        for tijd in [starttijd, eindtijd]:
+            c.execute('INSERT INTO reserveringen (naam, datum, tijdslot, email, annuleercode) VALUES (?, ?, ?, ?, ?)',
+                      (naam, datum, tijd, email, code))
+        conn.commit()
+        send_confirmation_email(naam, datum, starttijd, email, code)
+
+        csv_bestand = 'reserveringen_log.csv'
+        with open(csv_bestand, 'a', newline='', encoding='utf-8') as f:
+            writer = csv.writer(f)
+            if os.stat(csv_bestand).st_size == 0:
+                writer.writerow(['Datum', 'Starttijd', 'Naam', 'E-mailadres'])
+            writer.writerow([datum, starttijd, naam, email or ''])
 
         conn.close()
         return redirect('/?success=1')
